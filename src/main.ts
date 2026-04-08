@@ -4,21 +4,189 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
 const STORAGE_KEY = "typething.hotkey";
 const TEXT_STORAGE_KEY = "typething.text";
+const TABS_STORAGE_KEY = "typething.tabs";
+const SELECTED_TAB_ID_STORAGE_KEY = "typething.selected-tab-id";
 const DEFAULT_HOTKEY = "CommandOrControl+Shift+Space";
 const COMPOSE_VIEW = "compose";
 const SETTINGS_VIEW = "settings";
+
+type NoteTab = {
+  id: string;
+  text: string;
+};
 
 let composerEl: HTMLTextAreaElement | null = null;
 let composerPanelEl: HTMLElement | null = null;
 let settingsPanelEl: HTMLElement | null = null;
 let copyButtonEl: HTMLButtonElement | null = null;
 let shortcutInputEl: HTMLInputElement | null = null;
+let tabDotsEl: HTMLElement | null = null;
 
 let currentView = COMPOSE_VIEW;
 let registeredHotkey = DEFAULT_HOTKEY;
 let pendingHotkey = DEFAULT_HOTKEY;
+let tabs: NoteTab[] = [];
+let selectedTabId = "";
 
 const appWindow = getCurrentWindow();
+
+function createTab(text = ""): NoteTab {
+  return {
+    id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    text,
+  };
+}
+
+function readStoredTabs() {
+  try {
+    const rawTabs = localStorage.getItem(TABS_STORAGE_KEY);
+    if (!rawTabs) {
+      return [];
+    }
+
+    const parsed = JSON.parse(rawTabs);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter((tab): tab is NoteTab => {
+      return (
+        !!tab &&
+        typeof tab === "object" &&
+        typeof tab.id === "string" &&
+        typeof tab.text === "string"
+      );
+    });
+  } catch {
+    return [];
+  }
+}
+
+function selectedTabIndex() {
+  const index = tabs.findIndex((tab) => tab.id === selectedTabId);
+  return index === -1 ? 0 : index;
+}
+
+function currentTab() {
+  return tabs[selectedTabIndex()] ?? null;
+}
+
+function persistTabs() {
+  localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(tabs));
+  localStorage.setItem(SELECTED_TAB_ID_STORAGE_KEY, selectedTabId);
+  localStorage.setItem(TEXT_STORAGE_KEY, currentTab()?.text ?? "");
+}
+
+function renderTabDots() {
+  if (!tabDotsEl) {
+    return;
+  }
+
+  const dotsRoot = tabDotsEl;
+  dotsRoot.replaceChildren();
+
+  tabs.forEach((tab, index) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.className = "tab-dot";
+    dot.setAttribute("aria-label", `Switch to note ${index + 1}`);
+    dot.title = `Note ${index + 1}`;
+    if (tab.id === selectedTabId) {
+      dot.classList.add("is-active");
+      dot.setAttribute("aria-current", "true");
+    }
+
+    dot.addEventListener("click", () => {
+      switchToTab(tab.id);
+    });
+
+    dotsRoot.append(dot);
+  });
+}
+
+function renderCurrentTab() {
+  if (!composerEl) {
+    return;
+  }
+
+  composerEl.value = currentTab()?.text ?? "";
+  copyButtonEl?.setAttribute("data-state", "idle");
+  renderTabDots();
+  resizeComposer();
+}
+
+function removeEmptyCurrentTab(nextTabId?: string) {
+  const current = currentTab();
+  if (!current || tabs.length <= 1) {
+    return;
+  }
+
+  if (current.text.trim() !== "") {
+    return;
+  }
+
+  if (current.id === nextTabId) {
+    return;
+  }
+
+  tabs = tabs.filter((tab) => tab.id !== current.id);
+}
+
+function switchToTab(nextTabId: string) {
+  if (currentView !== COMPOSE_VIEW) {
+    return;
+  }
+
+  if (!tabs.some((tab) => tab.id === nextTabId)) {
+    return;
+  }
+
+  removeEmptyCurrentTab(nextTabId);
+  selectedTabId = nextTabId;
+  persistTabs();
+  renderCurrentTab();
+  composerEl?.focus();
+}
+
+function switchTabByOffset(offset: -1 | 1) {
+  if (currentView !== COMPOSE_VIEW) {
+    return;
+  }
+
+  const currentIndex = selectedTabIndex();
+
+  if (offset === 1 && currentIndex === tabs.length - 1) {
+    const nextTab = createTab();
+    tabs.push(nextTab);
+    removeEmptyCurrentTab(nextTab.id);
+    selectedTabId = nextTab.id;
+    persistTabs();
+    renderCurrentTab();
+    composerEl?.focus();
+    return;
+  }
+
+  const nextIndex = currentIndex + offset;
+  if (nextIndex < 0 || nextIndex >= tabs.length) {
+    return;
+  }
+
+  switchToTab(tabs[nextIndex].id);
+}
+
+function initializeTabs() {
+  const savedTabs = readStoredTabs();
+  const fallbackText = localStorage.getItem(TEXT_STORAGE_KEY) ?? "";
+
+  tabs = savedTabs.length > 0 ? savedTabs : [createTab(fallbackText)];
+  selectedTabId = localStorage.getItem(SELECTED_TAB_ID_STORAGE_KEY) ?? tabs[0].id;
+
+  if (!tabs.some((tab) => tab.id === selectedTabId)) {
+    selectedTabId = tabs[0].id;
+  }
+
+  persistTabs();
+}
 
 function resizeComposer() {
   if (!composerEl || currentView !== COMPOSE_VIEW) {
@@ -177,7 +345,7 @@ async function saveShortcut() {
 }
 
 async function copyComposerText() {
-  const value = composerEl?.value ?? "";
+  const value = currentTab()?.text ?? "";
 
   if (!value.trim()) {
     copyButtonEl?.setAttribute("data-state", "idle");
@@ -191,7 +359,7 @@ async function copyComposerText() {
 }
 
 async function hideMainWindow() {
-  localStorage.setItem(TEXT_STORAGE_KEY, composerEl?.value ?? "");
+  persistTabs();
   await invoke("hide_main_window");
 }
 
@@ -209,12 +377,34 @@ function isSettingsShortcut(event: KeyboardEvent) {
   return (event.metaKey || event.ctrlKey) && event.key === ",";
 }
 
+function tabDirectionFromEvent(event: KeyboardEvent) {
+  const wantsTabNavigation =
+    (event.ctrlKey || event.metaKey) &&
+    !event.altKey &&
+    !event.shiftKey;
+
+  if (!wantsTabNavigation) {
+    return null;
+  }
+
+  if (event.key === "ArrowLeft") {
+    return -1 as const;
+  }
+
+  if (event.key === "ArrowRight") {
+    return 1 as const;
+  }
+
+  return null;
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   composerEl = document.querySelector("#composer");
   composerPanelEl = document.querySelector("#composer-panel");
   settingsPanelEl = document.querySelector("#settings-panel");
   copyButtonEl = document.querySelector("#copy-button");
   shortcutInputEl = document.querySelector("#shortcut-input");
+  tabDotsEl = document.querySelector("#tab-dots");
 
   const surfaceEl = document.querySelector<HTMLElement>(".surface");
   const settingsButtonEl = document.querySelector<HTMLButtonElement>("#settings-button");
@@ -222,22 +412,23 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const savedHotkey = localStorage.getItem(STORAGE_KEY)?.trim();
   const initialHotkey = savedHotkey || DEFAULT_HOTKEY;
-  const savedText = localStorage.getItem(TEXT_STORAGE_KEY) ?? "";
 
   registeredHotkey = initialHotkey;
   pendingHotkey = initialHotkey;
   syncShortcutInput();
-
-  if (composerEl) {
-    composerEl.value = savedText;
-  }
+  initializeTabs();
+  renderCurrentTab();
 
   resizeComposer();
   window.addEventListener("resize", resizeComposer);
 
   composerEl?.addEventListener("input", () => {
     const text = composerEl?.value ?? "";
-    localStorage.setItem(TEXT_STORAGE_KEY, text);
+    const tab = currentTab();
+    if (tab) {
+      tab.text = text;
+      persistTabs();
+    }
     copyButtonEl?.setAttribute("data-state", "idle");
     resizeComposer();
   });
@@ -255,6 +446,14 @@ window.addEventListener("DOMContentLoaded", async () => {
         event.preventDefault();
         event.stopPropagation();
         openSettings();
+        return;
+      }
+
+      const tabDirection = tabDirectionFromEvent(event);
+      if (currentView === COMPOSE_VIEW && tabDirection) {
+        event.preventDefault();
+        event.stopPropagation();
+        switchTabByOffset(tabDirection);
         return;
       }
 
@@ -280,7 +479,15 @@ window.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (event.key !== "Enter" || event.shiftKey) {
+    const tabDirection = tabDirectionFromEvent(event);
+    if (tabDirection) {
+      event.preventDefault();
+      event.stopPropagation();
+      switchTabByOffset(tabDirection);
+      return;
+    }
+
+    if (event.key !== "Enter" || !event.metaKey || event.ctrlKey || event.altKey) {
       return;
     }
 
