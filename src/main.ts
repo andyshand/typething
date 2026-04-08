@@ -1,6 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { createElement } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { FiCopy, FiSettings } from "react-icons/fi";
 
 const STORAGE_KEY = "typething.hotkey";
 const TEXT_STORAGE_KEY = "typething.text";
@@ -21,6 +24,8 @@ let settingsPanelEl: HTMLElement | null = null;
 let copyButtonEl: HTMLButtonElement | null = null;
 let shortcutInputEl: HTMLInputElement | null = null;
 let tabDotsEl: HTMLElement | null = null;
+let settingsIconRoot: Root | null = null;
+let copyIconRoot: Root | null = null;
 
 let currentView = COMPOSE_VIEW;
 let registeredHotkey = DEFAULT_HOTKEY;
@@ -113,6 +118,24 @@ function renderCurrentTab() {
   copyButtonEl?.setAttribute("data-state", "idle");
   renderTabDots();
   resizeComposer();
+}
+
+function mountButtonIcons() {
+  const settingsButtonEl = document.querySelector<HTMLButtonElement>("#settings-button");
+
+  if (settingsButtonEl) {
+    settingsButtonEl.replaceChildren();
+    settingsIconRoot?.unmount();
+    settingsIconRoot = createRoot(settingsButtonEl);
+    settingsIconRoot.render(createElement(FiSettings, { "aria-hidden": true }));
+  }
+
+  if (copyButtonEl) {
+    copyButtonEl.replaceChildren();
+    copyIconRoot?.unmount();
+    copyIconRoot = createRoot(copyButtonEl);
+    copyIconRoot.render(createElement(FiCopy, { "aria-hidden": true }));
+  }
 }
 
 function removeEmptyCurrentTab(nextTabId?: string) {
@@ -416,6 +439,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   registeredHotkey = initialHotkey;
   pendingHotkey = initialHotkey;
   syncShortcutInput();
+  mountButtonIcons();
   initializeTabs();
   renderCurrentTab();
 
