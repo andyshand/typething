@@ -3,9 +3,8 @@
   font-size: 16px;
   line-height: 1.5;
   font-weight: 400;
-  color: #f2f3f5;
-  background: #090909;
-
+  color: #f5f6f8;
+  background: transparent;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,107 +20,81 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  background: transparent;
 }
 
 body {
   min-height: 100vh;
-  background: #090909;
+  overflow: hidden;
 }
 
 .shell {
   min-height: 100vh;
-  padding: 12px;
+  padding: 0;
+  background: transparent;
 }
 
 .surface {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 24px);
+  min-height: 100vh;
+  border-radius: 28px;
+  overflow: hidden;
 }
 
 .drag-surface {
   position: absolute;
   inset: 0;
-  background: #111214;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 18px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(32, 34, 38, 0.96), rgba(17, 18, 20, 0.98)),
+    rgba(17, 18, 20, 0.96);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
   cursor: grab;
   user-select: none;
+  -webkit-user-select: none;
 }
 
 .drag-surface:active {
   cursor: grabbing;
 }
 
-.editor-layer {
+.panel {
   position: relative;
   z-index: 1;
-  min-height: calc(100vh - 24px);
-  padding: 18px;
-  pointer-events: none;
+  min-height: 100vh;
+  padding: 24px 24px 20px;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+.panel-compose {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .composer {
   display: block;
   width: 100%;
-  min-height: 96px;
-  max-height: calc(100vh - 60px);
-  padding: 0 54px 54px 0;
+  min-height: 140px;
+  max-height: calc(100vh - 150px);
+  padding: 0;
+  margin: 0;
   resize: none;
   overflow-y: auto;
-  line-height: 1.35;
-  font-size: clamp(1.15rem, 2vw, 1.75rem);
-  color: #f2f3f5;
+  line-height: 1.32;
+  font-size: clamp(1.18rem, 2.2vw, 1.8rem);
+  color: #f5f6f8;
   background: transparent;
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  pointer-events: auto;
-}
-
-.copy-button {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  width: 44px;
-  height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #f2f3f5;
-  background: #1b1c1f;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  cursor: pointer;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  transition:
-    transform 120ms ease,
-    background-color 120ms ease,
-    border-color 120ms ease;
-  pointer-events: auto;
-}
-
-.copy-button svg {
-  width: 18px;
-  height: 18px;
-}
-
-.copy-button:hover {
-  transform: translateY(-1px);
-  background: #23252a;
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-.copy-button:focus {
-  outline: none;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.22),
-    0 0 0 2px rgba(255, 255, 255, 0.08);
-}
-
-.copy-button[data-state="copied"] {
-  background: #2b3138;
 }
 
 .composer:focus {
@@ -129,11 +102,124 @@ body {
 }
 
 .composer::placeholder {
-  color: rgba(242, 243, 245, 0.22);
+  color: rgba(245, 246, 248, 0.34);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.action-button {
+  min-height: 44px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #f5f6f8;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.action-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.action-button:focus {
+  outline: none;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.22),
+    0 0 0 2px rgba(255, 255, 255, 0.12);
+}
+
+.action-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.action-button-secondary {
+  color: rgba(245, 246, 248, 0.86);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#copy-button[data-state="copied"] {
+  background: rgba(113, 201, 152, 0.22);
+  color: #dff8e9;
+}
+
+.panel-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortcut-input {
+  width: min(100%, 420px);
+  min-height: 64px;
+  padding: 0 18px;
+  color: #f5f6f8;
+  background: rgba(7, 8, 10, 0.3);
+  border: 0;
+  border-radius: 18px;
+  font: inherit;
+  font-size: 1.1rem;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  cursor: text;
+}
+
+.shortcut-input:focus {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 0 2px rgba(122, 162, 255, 0.3);
+}
+
+.settings-done-button {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 2;
+}
+
+.settings-center {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 640px) {
   .shell {
-    padding: 12px;
+    padding: 0;
+  }
+
+  .surface {
+    min-height: 100vh;
+    border-radius: 24px;
+  }
+
+  .drag-surface {
+    border-radius: 24px;
+  }
+
+  .panel {
+    min-height: 100vh;
+    padding: 18px;
+  }
+  .settings-done-button {
+    top: 18px;
+    right: 18px;
   }
 }

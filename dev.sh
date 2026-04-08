@@ -34,6 +34,13 @@ collect_pids_by_pattern() {
   ' 2>/dev/null || true
 }
 
+collect_pids_by_comm() {
+  local name="$1"
+  ps -axo pid=,comm= | awk -v name="$name" '
+    $2 == name { print $1 }
+  ' 2>/dev/null || true
+}
+
 cd "$REPO_DIR"
 
 port_pids=("${(@f)$(lsof -tiTCP:${DEV_PORT} -sTCP:LISTEN 2>/dev/null || true)}")
@@ -41,6 +48,12 @@ kill_pids "port ${DEV_PORT}" "${port_pids[@]}"
 
 app_pids=("${(@f)$(collect_pids_by_pattern "$REPO_DIR/src-tauri/target/debug/typething")}")
 kill_pids "typething app" "${app_pids[@]}"
+
+relative_app_pids=("${(@f)$(collect_pids_by_pattern "target/debug/typething")}")
+kill_pids "typething relative app" "${relative_app_pids[@]}"
+
+named_app_pids=("${(@f)$(collect_pids_by_comm "typething")}")
+kill_pids "typething app name match" "${named_app_pids[@]}"
 
 vite_pids=("${(@f)$(collect_pids_by_pattern "$REPO_DIR/node_modules/.bin/vite")}")
 kill_pids "vite" "${vite_pids[@]}"

@@ -12,28 +12,62 @@
     <main class="shell">
       <div class="surface">
         <div class="drag-surface" data-tauri-drag-region></div>
-        <div class="editor-layer">
+        <section id="composer-panel" class="panel panel-compose" data-view="compose">
           <textarea
             id="composer"
             class="composer"
-            placeholder="Type..."
+            placeholder="type stuff... drag anywhere. enter to copy to clipboard. cmd+, for settings"
             autofocus
           ></textarea>
+          <div class="action-row">
+            <button
+              id="settings-button"
+              class="action-button action-button-secondary"
+              type="button"
+              aria-label="Open settings"
+              title="Open settings"
+            >
+              Settings
+            </button>
+            <button
+              id="copy-button"
+              class="action-button"
+              type="button"
+              aria-label="Copy text to clipboard"
+              title="Copy text to clipboard"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M9 7.5A2.5 2.5 0 0 1 11.5 5h6A2.5 2.5 0 0 1 20 7.5v8a2.5 2.5 0 0 1-2.5 2.5h-6A2.5 2.5 0 0 1 9 15.5v-8Zm2.5-.5a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5v-8a.5.5 0 0 0-.5-.5h-6ZM4 9.5A2.5 2.5 0 0 1 6.5 7H7v2h-.5a.5.5 0 0 0-.5.5v8a.5.5 0 0 0 .5.5h6a.5.5 0 0 0 .5-.5V17h2v.5A2.5 2.5 0 0 1 12.5 20h-6A2.5 2.5 0 0 1 4 17.5v-8Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
+        </section>
+        <section
+          id="settings-panel"
+          class="panel panel-settings"
+          data-view="settings"
+          hidden
+        >
           <button
-            id="copy-button"
-            class="copy-button"
+            id="close-settings-button"
+            class="action-button action-button-secondary settings-done-button"
             type="button"
-            aria-label="Copy text to clipboard"
-            title="Copy text to clipboard"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M4 6h10a4 4 0 0 1 4 4v1h-2v-1a2 2 0 0 0-2-2H4V6Zm0 5h9v2H6v5h12v-5h-2v-2h4v9H4v-9Zm9.5-7.5L20 10l-6.5 6.5-1.4-1.4L16.2 11H9V9h7.2l-4.1-4.1 1.4-1.4Z"
-                fill="currentColor"
-              />
-            </svg>
+            Done
           </button>
-        </div>
+          <div class="settings-center">
+            <input
+              id="shortcut-input"
+              class="shortcut-input"
+              type="text"
+              readonly
+              spellcheck="false"
+            />
+          </div>
+        </section>
       </div>
     </main>
   </body>

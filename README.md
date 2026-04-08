@@ -1,6 +1,10 @@
 # Typething
 
-A basic Tauri v2 desktop app with:
+A floating window you can type notes into and then copy to clipboard.
+
+![Typething screenshot](assets/typething-screenshot.png)
+
+Built with Tauri v2 and includes:
 
 - a centered typing box that grows as you write
 - a user-configurable global hotkey

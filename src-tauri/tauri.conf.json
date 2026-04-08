@@ -11,6 +11,7 @@
   },
   "app": {
     "withGlobalTauri": true,
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "Typething",
@@ -19,7 +20,8 @@
         "center": true,
         "resizable": true,
         "decorations": false,
-        "alwaysOnTop": true
+        "alwaysOnTop": true,
+        "transparent": true
       }
     ],
     "security": {
