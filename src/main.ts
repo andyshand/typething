@@ -12,6 +12,7 @@ const SELECTED_TAB_ID_STORAGE_KEY = "typething.selected-tab-id";
 const DEFAULT_HOTKEY = "CommandOrControl+Shift+Space";
 const COMPOSE_VIEW = "compose";
 const SETTINGS_VIEW = "settings";
+const SURFACE_INTERACTIVE_SELECTOR = "textarea, button, input, label";
 
 type NoteTab = {
   id: string;
@@ -421,6 +422,13 @@ function tabDirectionFromEvent(event: KeyboardEvent) {
   return null;
 }
 
+function isSurfaceInteractiveTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    !!target.closest(SURFACE_INTERACTIVE_SELECTOR)
+  );
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
   composerEl = document.querySelector("#composer");
   composerPanelEl = document.querySelector("#composer-panel");
@@ -559,26 +567,38 @@ window.addEventListener("DOMContentLoaded", async () => {
     void saveShortcut();
   });
 
+  surfaceEl?.addEventListener("mousemove", (event) => {
+    surfaceEl.classList.toggle(
+      "is-draggable-hover",
+      !isSurfaceInteractiveTarget(event.target),
+    );
+  });
+
+  surfaceEl?.addEventListener("mouseleave", () => {
+    surfaceEl.classList.remove("is-draggable-hover", "is-draggable-active");
+  });
+
   surfaceEl?.addEventListener("mousedown", async (event) => {
     if (event.button !== 0) {
       return;
     }
 
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      target.closest("textarea, button, input, label")
-    ) {
+    if (isSurfaceInteractiveTarget(event.target)) {
       return;
     }
 
     event.preventDefault();
+    surfaceEl.classList.add("is-draggable-active");
 
     try {
       await appWindow.startDragging();
     } catch (error) {
       console.error("Failed to start dragging", error);
     }
+  });
+
+  window.addEventListener("mouseup", () => {
+    surfaceEl?.classList.remove("is-draggable-active");
   });
 
   setView(COMPOSE_VIEW);

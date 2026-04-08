@@ -52,13 +52,47 @@ body {
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  cursor: grab;
   user-select: none;
   -webkit-user-select: none;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    backdrop-filter 160ms ease,
+    -webkit-backdrop-filter 160ms ease;
 }
 
-.drag-surface:active {
+.surface.is-draggable-hover,
+.surface.is-draggable-hover .panel {
+  cursor: grab;
+}
+
+.surface.is-draggable-active,
+.surface.is-draggable-active .panel {
   cursor: grabbing;
+}
+
+.surface.is-draggable-hover .drag-surface,
+.surface.is-draggable-active .drag-surface {
+  background:
+    linear-gradient(180deg, rgba(42, 46, 52, 0.76), rgba(20, 22, 26, 0.72)),
+    rgba(20, 22, 26, 0.68);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+
+.surface.is-draggable-active .drag-surface {
+  background:
+    linear-gradient(180deg, rgba(46, 50, 56, 0.7), rgba(20, 22, 26, 0.64)),
+    rgba(20, 22, 26, 0.6);
+  box-shadow:
+    0 28px 88px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
 }
 
 .panel {
